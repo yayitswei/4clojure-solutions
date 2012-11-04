@@ -209,3 +209,14 @@
 
 (defn solve-31 []
   (ways-to-make 200 [1 2 5 10 20 50 100 200]))
+
+;; #70 Word Sorting
+(fn [words]
+  (sort #(compare (.toLowerCase %1) (.toLowerCase %2))
+        (map #(apply str %)
+             (filter #(not (= '(\space) %))
+                     (partition-by #(= % \space) (.replaceAll words "[.?!]" ""))))))
+
+;; I learned from reading other people's solutions that clojure.string is auto-required. given that,
+(fn [s] (sort-by #(.toUpperCase %) (clojure.string/split s #"\W+")))
+;; is a much shorter solution.
