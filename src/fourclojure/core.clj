@@ -1,5 +1,9 @@
 (ns fourclojure.core)
 
+;; util
+(defmacro defmemoize [name & body]
+  `(def ~name (memoize (fn ~@body))))
+
 ;;((fn [& args]
 ;;   (some #(and (zero? (mod % b)) %) (iterate #(+ a %) a)) 2 3))
 
@@ -189,24 +193,19 @@
          (get bindings form_ form_))) bindings form)))
 
 ;; project euler prob 31
-(def coins [1 2 5 10 20 50 100 200])
-(def get-largest-coin
-  (memoize
-    (fn [amt coins]
-      (let [eligible-coins (filter #(<= % amt) coins)]
-        (when-not (empty? eligible-coins)
-          (apply max eligible-coins))))))
+;; assumes coins are sorted
+(defmemoize largest-coin [amt coins]
+            (last (take-while #(<= % amt) coins)))
 
-(def get-largest-coin-better
-  (memoize
-    (fn [amt coins]
-      (last (take-while #(<= % amt) coins)))))
+(defmemoize coin-subset [limit-exclusive coins]
+            (take-while #(< % limit-exclusive) coins))
 
-(def ways-to-make
-  (memoize
-    (fn [amt coins]
-      (let [largest (get-largest-coin-better amt coins)]
-        (if (nil? largest) 0
-          (+ (if (zero? (mod amt largest)) 1 0)
-             (apply + (map #(ways-to-make % (filter (fn [x] (not (= x largest))) coins))
-                           (map #(- amt %) (range 0 amt largest))))))))))
+(defmemoize ways-to-make [amt coins]
+            (if-let [largest (get-largest-coin amt coins)]
+              (+ (if (zero? (mod amt largest)) 1 0)
+                 (apply + (map #(ways-to-make % (coin-subset largest coins))
+                               (range amt 0 (- largest)))))
+              0))
+
+(defn solve-31 []
+  (ways-to-make 200 [1 2 5 10 20 50 100 200]))
