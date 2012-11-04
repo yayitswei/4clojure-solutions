@@ -158,4 +158,55 @@
 (defn prob98 [f s]
   (group-by f s))
 
-(into {} (map #(vector (f %) %)
+;; 171 Intervals
+(fn [col]
+  (->> col
+    set
+    (#(map % (when-not (empty? col) (range (apply min col) (inc (apply max col))))))
+    (partition-by nil?)
+    (map #(when (first %) (vector (first %) (last %))))
+    (filter identity)))
+
+;; but, resolve is banned
+(defn eval-helper [bindings form_]
+  (if (seq? form_)
+    (apply (resolve (first form_)) (map #(eval-helper bindings %) (rest form_)))
+    (get bindings form_ form_)))
+
+;; #121 Universal Computation Engine
+(fn [form]
+  (fn [bindings]
+    ((fn eval-helper [bindings form_]
+       (if (seq? form_)
+         (apply (resolve (first form_)) (map #(eval-helper bindings %) (rest form_)))
+         (get bindings form_ form_))) bindings form)))
+
+(defn uce [form]
+  (fn [bindings]
+    ((fn eval-helper [bindings form_]
+       (if (seq? form_)
+         (map #(eval-helper bindings %) form_)
+         (get bindings form_ form_))) bindings form)))
+
+;; project euler prob 31
+(def coins [1 2 5 10 20 50 100 200])
+(def get-largest-coin
+  (memoize
+    (fn [amt coins]
+      (let [eligible-coins (filter #(<= % amt) coins)]
+        (when-not (empty? eligible-coins)
+          (apply max eligible-coins))))))
+
+(def get-largest-coin-better
+  (memoize
+    (fn [amt coins]
+      (last (take-while #(<= % amt) coins)))))
+
+(def ways-to-make
+  (memoize
+    (fn [amt coins]
+      (let [largest (get-largest-coin-better amt coins)]
+        (if (nil? largest) 0
+          (+ (if (zero? (mod amt largest)) 1 0)
+             (apply + (map #(ways-to-make % (filter (fn [x] (not (= x largest))) coins))
+                           (map #(- amt %) (range 0 amt largest))))))))))
